@@ -25,61 +25,61 @@ flutter run
 
 ## Design Decisions
 
-### 1. Hansı istifadəçi inputlarını seçdim və niyə koçinq hekayə oyunu üçün mənalıdır?
+### 1. Which user inputs did I choose and why do they make sense for a coaching story-game?
 
-Tətbiq iki mərhələdə input toplayır:
+The app collects inputs across two steps:
 
-**Mərhələ 1 — Kim olduğun (UserInfo):**
-- **Ad** — AI promptunda "You are [name]..." kimi istifadə olunur. Xarakter şəxsi hiss etdirilir.
-- **Yaş** — Validasiya: 10–120 arası. Koçinq kontekstini müəyyənləşdirir.
-- **Cins** — Narrative tonunu tənzimləyir (she/he/they).
+**Step 1 — Who you are (UserInfo):**
+- **Name** — Used directly in the AI prompt as `"You are [name]..."`, making the character feel personal rather than generic.
+- **Age** — Validated between 10–120. Provides context that can shape the coaching tone.
+- **Gender** — Adjusts the narrative voice (she/he/they pronouns).
 
-**Mərhələ 2 — Necə hiss etdiyin (Customize):**
-- **Arxetip** (Warrior, Mage, Rogue, Healer, Ranger, Oracle) — İnsanların özlərini necə gördüklərini əks etdirir. Koçinqdə self-image əsasdır.
-- **Hazırkı əhval-ruhiyyə** (Focused, Restless, Hopeful...) — İnsanın indiki emosional vəziyyəti AI-ın tonunu şəkilləndirsin deyə daxil edilib.
-- **Hərəkətverici məqsəd** (Growth, Courage, Balance...) — Koçinqin özəyi budur: istiqamət. Bu input AI-a ən çox "dərinlik" verən fielddir.
+**Step 2 — How you feel (Customize):**
+- **Archetype** (Warrior, Mage, Rogue, Healer, Ranger, Oracle) — Reflects how a person sees themselves. Self-image is fundamental in coaching.
+- **Current mood** (Focused, Restless, Hopeful...) — Captures the user's emotional state so the AI can mirror and validate it in the narrative.
+- **Driving goal** (Growth, Courage, Balance...) — The core of any coaching session: direction. This single field gives the AI the most meaningful signal.
 
-Bunlar seçildi çünki hamısı birlikdə tam bir psixoloji profil yaradır — addan tutmuş dəyərlərə qədər. AI bu 6 datanı bir araya gətirib unikal, ikinci şəxs ("You are...") formatlı bir hekayə yazır ki, bu da istifadəçini gücləndirir.
+These six inputs were chosen because together they form a complete psychological snapshot — from identity to values. The AI combines all of them into a unique second-person narrative (`"You are..."`) that feels empowering and personal to each user.
 
 ---
 
-### 2. AI harada həqiqətən dəyər əlavə edir — harada israfçılıq olardı?
+### 2. Where does AI genuinely add value — and where would it be wasteful?
 
-**AI-ın real dəyər verdiyi yer:**
+**Where AI adds real value:**
 
-Hər bir istifadəçinin input kombinasiyası unikaldır. 6 fərqli arqumentin (ad, yaş, cins, arxetip, əhval, məqsəd) cəmi hər dəfə fərqli bir narrativ tələb edir — bunu statik template ilə etmək ya çox sadə, ya da çox monoton olardı. AI məhz bu kombinasiyanı qavrayan, emosional rezonans yaradan, poetik tonda bir mətn yaradır.
+Every user's combination of inputs is unique. Producing a narrative that meaningfully integrates name, age, gender, archetype, mood, and goal would either be too simplistic or too repetitive with static templates. The AI reads this combination and produces a poetic, emotionally resonant description that fits exactly that person at that moment.
 
 ```dart
-// openai_service.dart — prompt strukturu
+// openai_service.dart — prompt structure
 'You are ${r.name} the ${r.archetype}, ...'
 'Driven by "${r.goal}", your ${r.mood} spirit...'
 ```
 
-Bunun üstündə: AI "one special ability" və "one signature flaw" əlavə edir — bu koçinq narrativinin əsasıdır (güclü cəhət + kölgə tərəf).
+On top of that, the AI is instructed to surface one special ability and one signature flaw — a classic coaching framework (strength + shadow side) that would be hollow if hard-coded.
 
-**Harada israfçılıq olardı:**
+**Where it would be wasteful:**
 
-- **Formu validate etmək** — ad boşdur, yaş səhvdir kimi yoxlamalar sadə Dart kodudur, AI-a göndərmək absurddur.
-- **Arxetip adını göstərmək** — "You chose Warrior" tipli statik mətn AI tələb etmir.
-- **Firestore save/load** — database əməliyyatları AI-la heç bir əlaqəsi yoxdur.
-- **Mockup fallback** — API key olmadıqda tətbiq template-based mock istifadə edir, bu kifayətdir.
+- **Form validation** — Checking whether a name is empty or an age is out of range is plain Dart logic. Sending it to an LLM would be absurd.
+- **Displaying the archetype label** — Showing `"You chose Warrior"` requires no AI.
+- **Firestore read/write** — Database operations have nothing to do with AI.
+- **The mock fallback** — When no API key is present, the app uses a template-based mock response. That mock is intentionally lightweight and covers the offline case without wasting API calls.
 
 ---
 
-### 3. Həssas inputların (yaş, cins, üstünlüklər) məxfiliyini necə idarə edərəm?
+### 3. How would I handle the privacy of sensitive inputs (age, gender, preferences)?
 
-**Hazırkı vəziyyət:**
+**Current state:**
 
-Bu test tətbiqidir. Data Firebase Firestore-a yazılır, OpenAI API-ya göndərilir. Hər iki yer üçün risk var.
+This is a test application. Data is written to Firebase Firestore and sent to the OpenAI API. Both surfaces carry risk.
 
-**Production üçün tətbiq ediləcək yanaşmalar:**
+**Approaches to apply in production:**
 
-| Risk | Həll |
+| Risk | Mitigation |
 |---|---|
-| API key client-da saxlanır (`.env`) | Production-da key backend proxy arxasına keçirilməlidir. Client heç vaxt birbaşa OpenAI-a çatmamalıdır. |
-| Yaş + cins OpenAI-a gedir | Promptda real yaş əvəzinə range göndərilə bilər: `"late 20s"` əvəzinə `27`. Cins yerinə arxetip-based pronounlar istifadə edilə bilər. |
-| Ad Firestore-da açıq saxlanır | Pseudonymization: istifadəçi adı əvəzinə hash-based ID saxlanıla bilər. |
-| İstifadəçi razılığı yoxdur | GDPR/KVKK uyğunluğu üçün data toplama öncəsindən açıq consent ekranı əlavə edilməlidir. |
-| Mood + goal psixoloji data sayılır | Bu inputlar OpenAI-a göndərilməzdən əvvəl anonimləşdirilməli, ya da yalnız on-device inference (local model) istifadə edilməlidir. |
+| API key stored on the client (`.env`) | Move to a backend proxy. The client should never call OpenAI directly — it calls your own server, which holds the key. |
+| Age + gender sent to OpenAI | Send a range instead of an exact age (`"late 20s"` rather than `27`). Replace gender with archetype-based pronouns to reduce identifiability. |
+| Name stored in plaintext in Firestore | Pseudonymize: store a hash-based ID instead of the real name, or encrypt the field at rest. |
+| No user consent flow | Add an explicit consent screen before any data is collected — required for GDPR/CCPA compliance. |
+| Mood + goal are psychological data | These inputs should either be anonymized before being sent to a third-party model, or processed entirely on-device using a local inference model. |
 
-**Ən vacib prinsip:** İstifadəçi nəyin nəyə görə toplandığını bilməlidir. Bu tətbiqdə bu hələ yoxdur — ilk əlavə ediləcək şey bir privacy notice ekranı olmalıdır.
+**The most important principle:** users must know what is being collected and why. This app currently has no privacy notice — that would be the first thing to add before any real-world release.

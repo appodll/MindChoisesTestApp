@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "345359008700",
+    "project_id": "mindchoisestestapp",
+    "storage_bucket": "mindchoisestestapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:345359008700:android:c62a0039093b7c046a21b9",
+        "android_client_info": {
+          "package_name": "com.example.mindchoises_test_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAu5abJjaB0OxItHB5LK-NaaAFyyRZxvOE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
